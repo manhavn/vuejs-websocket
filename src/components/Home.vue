@@ -1,6 +1,6 @@
 <template>
   <div class="hello">
-    <a href="#/">Home</a>
+    <a href="#/hello">Hello</a>
     <h1>{{message || msg}}</h1>
     <h2>count</h2>
     {{count}}
@@ -13,10 +13,10 @@
   import {mapState} from 'vuex'
 
   export default {
-    name: 'HelloWorld',
+    name: 'Home',
     data() {
       return {
-        msg: 'Welcome to Hello',
+        msg: 'Welcome to Home',
         subState: false
       }
     },
