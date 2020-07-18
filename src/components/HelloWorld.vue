@@ -31,11 +31,13 @@
       state: app => app.$store.state,
     },
     mounted() {
-      this.increment()
-      setInterval(() => {
+      if (!window.xInterval) {
         this.increment()
-        this.$set(this, 'subState', !this.subState)
-      }, 1000)
+        window.xInterval = setInterval(() => {
+          this.increment()
+          this.$set(this, 'subState', !this.subState)
+        }, 1000)
+      }
     },
     methods: {
       increment() {
