@@ -1,20 +1,52 @@
 <template>
+  <div></div>
 </template>
 
 <script>
-  import {mapState} from "vuex";
-  import {reTryConnectWS} from '../func'
+  import { mapState } from 'vuex';
+
+  function checkStartConnect() {
+    if (this.conn) this.setConn(false);
+    if (this.ws) {
+      this.ws.close();
+      this.setWs(null);
+    }
+    if (this.xInterval) {
+      clearInterval(this.xInterval);
+      this.setXInterval(0);
+    }
+    if (this.startConnect) this.setWs(new WebSocket(this.socketUrl));
+  }
+
+  function connectWsAndListen() {
+    if (this.startConnect && this.ws) {
+      if (this.retry) {
+        this.ws.onerror = () => setTimeout(() => {
+          this.setWs(new WebSocket(this.socketUrl));
+        }, this.timeOutState);
+      }
+      this.ws.onopen = () => {
+        this.ws.onmessage = event => this.$store.commit('setMessageWS', event.data);
+        this.ws.onclose = () => this.setWsCheck(!this.wsCheck);
+        this.setConn(true);
+        if (!this.retry) this.setRetry(true);
+      };
+    }
+  }
 
   export default {
-    name: "ConnectWS",
+    name: 'ConnectWS',
     props: ['socketUrl', 'timeOut', 'startConnect', 'tryConnect'],
     data() {
       return {
         ws: null,
         conn: false,
-        retry: false,
+        wsCheck: false,
+        status: false,
+        retry: this.tryConnect,
+        timeOutState: this.timeOut,
         xInterval: 0,
-      }
+      };
     },
     computed: {
       ...mapState({
@@ -24,58 +56,74 @@
     },
     methods: {
       setWs(value) {
-        this.ws = value
+        this.$set(this, 'ws', value);
       },
       setConn(value) {
-        this.conn = value
+        this.$set(this, 'conn', value);
       },
       setRetry(value) {
-        this.retry = value
+        this.$set(this, 'retry', value);
       },
       setXInterval(value) {
-        this.xInterval = value
+        this.$set(this, 'xInterval', value);
       },
-      startCheckAndConnect() {
-        this.setWs(null)
-        this.setConn(false)
-        this.setRetry(false)
-        if (this.xInterval) clearInterval(this.xInterval) && this.setXInterval(0)
-        setTimeout(() => {
-          if (this.startConnect) {
-            this.setWs(new WebSocket(this.socketUrl))
-          }
-        }, 100)
+      setWsCheck(value) {
+        this.$set(this, 'wsCheck', value);
+      },
+      setStatus(value) {
+        this.$set(this, 'status', value);
+      },
+      setTimeOutState(value) {
+        this.$set(this, 'timeOutState', value);
       },
     },
     mounted() {
-      this.startCheckAndConnect();
+      checkStartConnect.call(this);
     },
     watch: {
       startConnect() {
-        this.startCheckAndConnect();
+        checkStartConnect.call(this);
       },
       ws() {
-        if (this.startConnect && this.ws) this.ws.onopen = () => {
-          this.ws.onmessage = ev => this.$store.commit('setMessageWS', ev.data)
-          this.ws.onerror = () => reTryConnectWS(this.socketUrl, this.timeOut, this.setWs, this.setConn, this.xInterval, this.setXInterval)
-          this.ws.onclose = () => reTryConnectWS(this.socketUrl, this.timeOut, this.setWs, this.setConn, this.xInterval, this.setXInterval)
-          if (this.xInterval) clearInterval(this.xInterval)
-          this.setConn(true)
-        }
-        if (this.tryConnect && !this.retry) setTimeout(() => this.setRetry(true), 1000)
-      },
-      conn() {
-        this.$store.commit('setConnectWS', this.conn)
-      },
-      sendCount() {
-        if (this.conn && this.sendCount > -1) this.ws.send(JSON.stringify(this.putMessage))
+        connectWsAndListen.call(this);
       },
       retry() {
-        if (this.startConnect && this.tryConnect && this.retry && !this.conn && this.ws) {
-          const x = setInterval(() => this.setWs(new WebSocket(this.socketUrl)), this.timeOut)
-          this.setXInterval(x)
+        connectWsAndListen.call(this);
+      },
+      timeOut() {
+        this.setTimeOutState(this.timeOut);
+      },
+      conn() {
+        this.$store.commit('setConnectWS', this.conn);
+        if (this.conn) {
+          if (this.xInterval) clearInterval(this.xInterval);
+          const x = setInterval(() => {
+            this.setWsCheck(!this.wsCheck);
+          }, 5000);
+          this.setXInterval(x);
         }
       },
-    }
-  }
+      sendCount() {
+        if (this.conn && this.sendCount > -1) this.ws.send(JSON.stringify(this.putMessage));
+        if (this.status) {
+          this.ws.send(JSON.stringify(this.putMessage));
+        } else if (this.conn && this.sendCount > -1 && this.ws && this.ws.readyState === 1) {
+          this.ws.send(JSON.stringify(this.putMessage));
+          this.setStatus(true);
+        } else {
+          this.setWsCheck(!this.wsCheck);
+        }
+      },
+      wsCheck() {
+        if (this.conn && this.ws && this.ws.readyState > 1) {
+          this.setStatus(false);
+          if (this.xInterval) clearInterval(this.xInterval);
+          this.ws.close();
+          this.setWs(null);
+          this.setConn(false);
+          this.setWs(new WebSocket(this.socketUrl));
+        }
+      },
+    },
+  };
 </script>

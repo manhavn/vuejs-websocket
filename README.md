@@ -1,4 +1,4 @@
-# ostris.club
+# vuejs-websocket
 
 > A Vue.js project
 

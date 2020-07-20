@@ -3,7 +3,7 @@
     <router-view/>
     <ConnectWS
       :timeOut='1000'
-      :socketUrl="'wss://ostris.club/ws'"
+      :socketUrl='"wss://ostris.club/ws"'
       :startConnect='true'
       :tryConnect='true'/>
   </div>
@@ -13,7 +13,7 @@
   export default {
     name: 'App',
     components: {
-      ConnectWS: _ => import('./components/ConnectWS')
+      ConnectWS: () => import('./components/ConnectWS')
     }
   }
 </script>
