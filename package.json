@@ -8,7 +8,10 @@
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "npm run dev",
     "build": "node build/build.js",
-    "serve": "yarn build && serve -s dist -p 8080"
+    "serve": "yarn build && serve -s dist -p 8080",
+    "mv-build-gcloud": "rm -rf gcloud-deploy/dist && mv dist gcloud-deploy",
+    "gcloud-deploy": "gcloud app deploy gcloud-deploy/app.yaml --project __________________",
+    "site-deploy": "yarn build && yarn mv-build-gcloud && yarn gcloud-deploy"
   },
   "dependencies": {
     "es6-promise": "^4.2.8",
